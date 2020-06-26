@@ -1,7 +1,7 @@
-import React, { SFC } from 'react';
+import * as React from 'react';
+import { FunctionComponent, memo } from 'react';
 import PropTypes from 'prop-types';
 import get from 'lodash/get';
-import pure from 'recompose/pure';
 import Typography, { TypographyProps } from '@material-ui/core/Typography';
 
 import sanitizeRestProps from './sanitizeRestProps';
@@ -46,58 +46,61 @@ interface Props extends FieldProps {
  * // renders the record { id: 1234, price: 25.99 } as
  * <span>25,99 $US</span>
  */
-export const NumberField: SFC<Props & InjectedFieldProps & TypographyProps> = ({
-    className,
-    record,
-    source,
-    locales,
-    options,
-    textAlign,
-    ...rest
-}) => {
-    if (!record) {
-        return null;
-    }
-    const value = get(record, source);
-    if (value == null) {
-        return null;
-    }
-    if (!hasNumberFormat) {
+export const NumberField: FunctionComponent<
+    Props & InjectedFieldProps & TypographyProps
+> = memo<Props & InjectedFieldProps & TypographyProps>(
+    ({
+        className,
+        emptyText,
+        record,
+        source,
+        locales,
+        options,
+        textAlign,
+        ...rest
+    }) => {
+        if (!record) {
+            return null;
+        }
+        const value = get(record, source);
+        if (value == null) {
+            return emptyText ? (
+                <Typography
+                    component="span"
+                    variant="body2"
+                    className={className}
+                    {...sanitizeRestProps(rest)}
+                >
+                    {emptyText}
+                </Typography>
+            ) : null;
+        }
+
         return (
             <Typography
+                variant="body2"
                 component="span"
-                variant="body1"
                 className={className}
                 {...sanitizeRestProps(rest)}
             >
-                {value}
+                {hasNumberFormat
+                    ? value.toLocaleString(locales, options)
+                    : value}
             </Typography>
         );
     }
+);
 
-    return (
-        <Typography
-            component="span"
-            variant="body1"
-            className={className}
-            {...sanitizeRestProps(rest)}
-        >
-            {value.toLocaleString(locales, options)}
-        </Typography>
-    );
-};
-
-// wat? TypeScript looses the displayName if we don't set it explicitly
+// what? TypeScript looses the displayName if we don't set it explicitly
 NumberField.displayName = 'NumberField';
 
-const EnhancedNumberField = pure<Props & TypographyProps>(NumberField);
-
-EnhancedNumberField.defaultProps = {
+NumberField.defaultProps = {
     addLabel: true,
     textAlign: 'right',
 };
 
-EnhancedNumberField.propTypes = {
+NumberField.propTypes = {
+    // @ts-ignore
     ...Typography.propTypes,
     ...fieldPropTypes,
     locales: PropTypes.oneOfType([
@@ -107,6 +110,4 @@ EnhancedNumberField.propTypes = {
     options: PropTypes.object,
 };
 
-EnhancedNumberField.displayName = 'EnhancedNumberField';
-
-export default EnhancedNumberField;
+export default NumberField;

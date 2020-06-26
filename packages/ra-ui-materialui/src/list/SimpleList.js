@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import PropTypes from 'prop-types';
 import Avatar from '@material-ui/core/Avatar';
 import List from '@material-ui/core/List';
@@ -7,121 +7,167 @@ import ListItemAvatar from '@material-ui/core/ListItemAvatar';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction';
 import ListItemText from '@material-ui/core/ListItemText';
-import { withStyles, createStyles } from '@material-ui/core/styles';
+import { makeStyles } from '@material-ui/core/styles';
 import { Link } from 'react-router-dom';
 import { linkToRecord, sanitizeListRestProps } from 'ra-core';
+import SimpleListLoading from './SimpleListLoading';
 
-const styles = createStyles({
-    link: {
-        textDecoration: 'none',
-        color: 'inherit',
+const useStyles = makeStyles(
+    {
+        tertiary: { float: 'right', opacity: 0.541176 },
     },
-    tertiary: { float: 'right', opacity: 0.541176 },
-});
-
-const LinkOrNot = withStyles(styles)(
-    ({ classes, linkType, basePath, id, children }) =>
-        linkType === 'edit' || linkType === true ? (
-            <Link to={linkToRecord(basePath, id)} className={classes.link}>
-                {children}
-            </Link>
-        ) : linkType === 'show' ? (
-            <Link
-                to={`${linkToRecord(basePath, id)}/show`}
-                className={classes.link}
-            >
-                {children}
-            </Link>
-        ) : (
-            <span>{children}</span>
-        )
+    { name: 'RaSimpleList' }
 );
 
-const SimpleList = ({
-    basePath,
-    classes = {},
-    className,
-    data,
-    hasBulkActions,
-    ids,
-    isLoading,
-    leftAvatar,
-    leftIcon,
+const useLinkOrNotStyles = makeStyles(
+    {
+        link: {
+            textDecoration: 'none',
+            color: 'inherit',
+        },
+    },
+    { name: 'RaLinkOrNot' }
+);
+
+const LinkOrNot = ({
+    classes: classesOverride,
     linkType,
-    onToggleItem,
-    primaryText,
-    rightAvatar,
-    rightIcon,
-    secondaryText,
-    selectedIds,
-    tertiaryText,
-    total,
-    ...rest
-}) =>
-    (isLoading || total > 0) && (
-        <List className={className} {...sanitizeListRestProps(rest)}>
-            {ids.map(id => (
-                <LinkOrNot
-                    linkType={linkType}
-                    basePath={basePath}
-                    id={id}
-                    key={id}
-                >
-                    <ListItem button>
-                        {leftIcon && (
-                            <ListItemIcon>
-                                {leftIcon(data[id], id)}
-                            </ListItemIcon>
-                        )}
-                        {leftAvatar && (
-                            <ListItemAvatar>
-                                <Avatar>{leftAvatar(data[id], id)}</Avatar>
-                            </ListItemAvatar>
-                        )}
-                        <ListItemText
-                            primary={
-                                <div>
-                                    {primaryText(data[id], id)}
-                                    {tertiaryText && (
-                                        <span className={classes.tertiary}>
-                                            {tertiaryText(data[id], id)}
-                                        </span>
-                                    )}
-                                </div>
-                            }
-                            secondary={
-                                secondaryText && secondaryText(data[id], id)
-                            }
-                        />
-                        {(rightAvatar || rightIcon) && (
-                            <ListItemSecondaryAction>
-                                {rightAvatar && (
-                                    <Avatar>{rightAvatar(data[id], id)}</Avatar>
-                                )}
-                                {rightIcon && (
-                                    <ListItemIcon>
-                                        {rightIcon(data[id], id)}
-                                    </ListItemIcon>
-                                )}
-                            </ListItemSecondaryAction>
-                        )}
-                    </ListItem>
-                </LinkOrNot>
-            ))}
-        </List>
+    basePath,
+    id,
+    children,
+    record,
+}) => {
+    const classes = useLinkOrNotStyles({ classes: classesOverride });
+    const link =
+        typeof linkType === 'function' ? linkType(record, id) : linkType;
+
+    return link === 'edit' || link === true ? (
+        <Link to={linkToRecord(basePath, id)} className={classes.link}>
+            {children}
+        </Link>
+    ) : link === 'show' ? (
+        <Link
+            to={`${linkToRecord(basePath, id)}/show`}
+            className={classes.link}
+        >
+            {children}
+        </Link>
+    ) : (
+        <span>{children}</span>
     );
+};
+
+const SimpleList = props => {
+    const {
+        basePath,
+        className,
+        classes: classesOverride,
+        data,
+        hasBulkActions,
+        ids,
+        loaded,
+        loading,
+        leftAvatar,
+        leftIcon,
+        linkType,
+        onToggleItem,
+        primaryText,
+        rightAvatar,
+        rightIcon,
+        secondaryText,
+        selectedIds,
+        tertiaryText,
+        total,
+        ...rest
+    } = props;
+    const classes = useStyles(props);
+
+    if (loaded === false) {
+        return (
+            <SimpleListLoading
+                classes={classes}
+                className={className}
+                hasLeftAvatarOrIcon={!!leftIcon || !!leftAvatar}
+                hasRightAvatarOrIcon={!!rightIcon || !!rightAvatar}
+                hasSecondaryText={!!secondaryText}
+                hasTertiaryText={!!tertiaryText}
+            />
+        );
+    }
+
+    return (
+        total > 0 && (
+            <List className={className} {...sanitizeListRestProps(rest)}>
+                {ids.map(id => (
+                    <LinkOrNot
+                        linkType={linkType}
+                        basePath={basePath}
+                        id={id}
+                        key={id}
+                        record={data[id]}
+                    >
+                        <ListItem button={!!linkType}>
+                            {leftIcon && (
+                                <ListItemIcon>
+                                    {leftIcon(data[id], id)}
+                                </ListItemIcon>
+                            )}
+                            {leftAvatar && (
+                                <ListItemAvatar>
+                                    <Avatar>{leftAvatar(data[id], id)}</Avatar>
+                                </ListItemAvatar>
+                            )}
+                            <ListItemText
+                                primary={
+                                    <div>
+                                        {primaryText(data[id], id)}
+                                        {tertiaryText && (
+                                            <span className={classes.tertiary}>
+                                                {tertiaryText(data[id], id)}
+                                            </span>
+                                        )}
+                                    </div>
+                                }
+                                secondary={
+                                    secondaryText && secondaryText(data[id], id)
+                                }
+                            />
+                            {(rightAvatar || rightIcon) && (
+                                <ListItemSecondaryAction>
+                                    {rightAvatar && (
+                                        <Avatar>
+                                            {rightAvatar(data[id], id)}
+                                        </Avatar>
+                                    )}
+                                    {rightIcon && (
+                                        <ListItemIcon>
+                                            {rightIcon(data[id], id)}
+                                        </ListItemIcon>
+                                    )}
+                                </ListItemSecondaryAction>
+                            )}
+                        </ListItem>
+                    </LinkOrNot>
+                ))}
+            </List>
+        )
+    );
+};
 
 SimpleList.propTypes = {
     basePath: PropTypes.string,
-    classes: PropTypes.object,
     className: PropTypes.string,
+    classes: PropTypes.object,
     data: PropTypes.object,
     hasBulkActions: PropTypes.bool.isRequired,
     ids: PropTypes.array,
     leftAvatar: PropTypes.func,
     leftIcon: PropTypes.func,
-    linkType: PropTypes.oneOfType([PropTypes.string, PropTypes.bool])
-        .isRequired,
+    linkType: PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.bool,
+        PropTypes.func,
+    ]).isRequired,
     onToggleItem: PropTypes.func,
     primaryText: PropTypes.func,
     rightAvatar: PropTypes.func,
@@ -137,4 +183,4 @@ SimpleList.defaultProps = {
     selectedIds: [],
 };
 
-export default withStyles(styles)(SimpleList);
+export default SimpleList;

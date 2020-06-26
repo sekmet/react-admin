@@ -1,7 +1,7 @@
-import React, { SFC } from 'react';
+import * as React from 'react';
+import { FunctionComponent, memo } from 'react';
 import PropTypes from 'prop-types';
 import get from 'lodash/get';
-import pure from 'recompose/pure';
 import Typography, { TypographyProps } from '@material-ui/core/Typography';
 import sanitizeRestProps from './sanitizeRestProps';
 import { InjectedFieldProps, FieldProps, fieldPropTypes } from './types';
@@ -13,50 +13,43 @@ interface Props extends FieldProps {
     stripTags: boolean;
 }
 
-const RichTextField: SFC<Props & InjectedFieldProps & TypographyProps> = ({
-    className,
-    source,
-    record = {},
-    stripTags,
-    ...rest
-}) => {
-    const value = get(record, source);
-    if (stripTags) {
+const RichTextField: FunctionComponent<
+    Props & InjectedFieldProps & TypographyProps
+> = memo<Props & InjectedFieldProps & TypographyProps>(
+    ({ className, emptyText, source, record = {}, stripTags, ...rest }) => {
+        const value = get(record, source);
+
         return (
             <Typography
                 className={className}
+                variant="body2"
                 component="span"
                 {...sanitizeRestProps(rest)}
             >
-                {removeTags(value)}
+                {value == null && emptyText ? (
+                    emptyText
+                ) : stripTags ? (
+                    removeTags(value)
+                ) : (
+                    <span dangerouslySetInnerHTML={{ __html: value }} />
+                )}
             </Typography>
         );
     }
+);
 
-    return (
-        <Typography
-            className={className}
-            component="span"
-            {...sanitizeRestProps(rest)}
-        >
-            <span dangerouslySetInnerHTML={{ __html: value }} />
-        </Typography>
-    );
-};
-
-const EnhancedRichTextField = pure<Props & TypographyProps>(RichTextField);
-
-EnhancedRichTextField.defaultProps = {
+RichTextField.defaultProps = {
     addLabel: true,
     stripTags: false,
 };
 
-EnhancedRichTextField.propTypes = {
+RichTextField.propTypes = {
+    // @ts-ignore
     ...Typography.propTypes,
     ...fieldPropTypes,
     stripTags: PropTypes.bool,
 };
 
-EnhancedRichTextField.displayName = 'EnhancedRichTextField';
+RichTextField.displayName = 'RichTextField';
 
-export default EnhancedRichTextField;
+export default RichTextField;

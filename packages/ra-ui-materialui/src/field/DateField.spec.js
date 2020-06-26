@@ -1,20 +1,23 @@
-import React from 'react';
-import assert from 'assert';
-import { shallow } from 'enzyme';
-import { DateField } from './DateField';
+import * as React from 'react';
+import expect from 'expect';
+import { render, cleanup } from '@testing-library/react';
+import DateField from './DateField';
 
 describe('<DateField />', () => {
-    it('should return null when the record is not set', () =>
-        assert.equal(shallow(<DateField source="foo" />).html(), null));
+    afterEach(cleanup);
 
-    it('should return null when the record has no value for the source', () =>
-        assert.equal(
-            shallow(<DateField record={{}} source="foo" />).html(),
-            null
-        ));
+    it('should return null when the record is not set', () => {
+        const { container } = render(<DateField source="foo" />);
+        expect(container.firstChild).toBeNull();
+    });
+
+    it('should return null when the record has no value for the source', () => {
+        const { container } = render(<DateField record={{}} source="foo" />);
+        expect(container.firstChild).toBeNull();
+    });
 
     it('should render a date', () => {
-        const wrapper = shallow(
+        const { queryByText } = render(
             <DateField
                 record={{ foo: new Date('2017-04-23') }}
                 source="foo"
@@ -22,14 +25,12 @@ describe('<DateField />', () => {
             />
         );
 
-        assert.equal(
-            wrapper.children().text(),
-            new Date('2017-04-23').toLocaleDateString('en-US')
-        );
+        const date = new Date('2017-04-23').toLocaleDateString('en-US');
+        expect(queryByText(date)).not.toBeNull();
     });
 
     it('should render a date and time when the showtime prop is passed', () => {
-        const wrapper = shallow(
+        const { queryByText } = render(
             <DateField
                 record={{ foo: new Date('2017-04-23 23:05') }}
                 showTime
@@ -38,10 +39,8 @@ describe('<DateField />', () => {
             />
         );
 
-        assert.equal(
-            wrapper.children().text(),
-            new Date('2017-04-23 23:05').toLocaleString('en-US')
-        );
+        const date = new Date('2017-04-23 23:05').toLocaleString('en-US');
+        expect(queryByText(date)).not.toBeNull();
     });
 
     it('should pass the options prop to toLocaleString', () => {
@@ -53,7 +52,7 @@ describe('<DateField />', () => {
             day: 'numeric',
         };
 
-        const wrapper = shallow(
+        const { queryByText } = render(
             <DateField
                 record={{ foo: date }}
                 source="foo"
@@ -61,15 +60,13 @@ describe('<DateField />', () => {
                 options={options}
             />
         );
-
-        return assert.equal(
-            wrapper.children().text(),
-            date.toLocaleDateString('en-US', options)
-        );
+        expect(
+            queryByText(date.toLocaleDateString('en-US', options))
+        ).not.toBeNull();
     });
 
     it('should use the locales props as an argument to toLocaleString', () => {
-        const wrapper = shallow(
+        const { queryByText } = render(
             <DateField
                 record={{ foo: new Date('2017-04-23') }}
                 source="foo"
@@ -77,14 +74,12 @@ describe('<DateField />', () => {
             />
         );
 
-        assert.equal(
-            wrapper.children().text(),
-            new Date('2017-04-23').toLocaleDateString('fr-FR')
-        );
+        const date = new Date('2017-04-23').toLocaleDateString('fr-FR');
+        expect(queryByText(date)).not.toBeNull();
     });
 
     it('should use custom className', () => {
-        const wrapper = shallow(
+        const { container } = render(
             <DateField
                 record={{ foo: new Date('01/01/2016') }}
                 source="foo"
@@ -93,11 +88,11 @@ describe('<DateField />', () => {
             />
         );
 
-        assert.ok(wrapper.is('.foo'));
+        expect(container.firstChild.classList.contains('foo')).toBe(true);
     });
 
     it('should handle deep fields', () => {
-        const wrapper = shallow(
+        const { queryByText } = render(
             <DateField
                 record={{ foo: { bar: new Date('01/01/2016') } }}
                 source="foo.bar"
@@ -105,9 +100,22 @@ describe('<DateField />', () => {
             />
         );
 
-        assert.equal(
-            wrapper.children().text(),
-            new Date('1/1/2016').toLocaleDateString('en-US')
-        );
+        const date = new Date('1/1/2016').toLocaleDateString('en-US');
+        expect(queryByText(date)).not.toBeNull();
     });
+
+    it.each([null, undefined])(
+        'should render the emptyText when value is %s',
+        foo => {
+            const { queryByText } = render(
+                <DateField
+                    record={{ foo }}
+                    source="foo"
+                    locales="fr-FR"
+                    emptyText="NA"
+                />
+            );
+            expect(queryByText('NA')).not.toBeNull();
+        }
+    );
 });
